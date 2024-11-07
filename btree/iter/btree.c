@@ -21,7 +21,7 @@
  */
 void bst_init(bst_node_t **tree)
 {
-  return;
+  (*tree) = NULL;
 }
 
 /*
@@ -35,7 +35,7 @@ void bst_init(bst_node_t **tree)
  */
 bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
 {
-  return false;
+  
 }
 
 /*
@@ -51,7 +51,20 @@ bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
  */
 void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
 {
-  return;
+    while(*tree == NULL){
+      if((*tree)->key < key)
+        *tree = (*tree)->left;
+      else if ((*tree)->key > key)
+        *tree = (*tree)->right;
+      else
+      {
+        (*tree)->content.type = value.type;
+        (*tree)->content.value = value.value;
+        return;
+      }
+    }
+  
+
 }
 
 /*

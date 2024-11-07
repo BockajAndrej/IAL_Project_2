@@ -209,15 +209,16 @@ void bst_delete(bst_node_t **tree, char key)
  */
 void bst_dispose(bst_node_t **tree)
 {
-  if (*tree != NULL) {
-        // Recursively dispose of the left and right subtrees
-        bst_dispose(&(*tree)->left);
-        bst_dispose(&(*tree)->right);
-        
-        // Free the current node and set it to NULL
-        free(*tree);
-        *tree = NULL;
-    }
+  if (*tree != NULL)
+  {
+    // Recursively dispose of the left and right subtrees
+    bst_dispose(&(*tree)->left);
+    bst_dispose(&(*tree)->right);
+
+    // Free the current node and set it to NULL
+    free(*tree);
+    *tree = NULL;
+  }
 }
 
 /*
@@ -229,6 +230,11 @@ void bst_dispose(bst_node_t **tree)
  */
 void bst_preorder(bst_node_t *tree, bst_items_t *items)
 {
+  if (tree == NULL)
+    return;
+  bst_add_node_to_items(tree, items);
+  bst_preorder(tree->left, items);
+  bst_preorder(tree->right, items);
 }
 
 /*
@@ -240,6 +246,11 @@ void bst_preorder(bst_node_t *tree, bst_items_t *items)
  */
 void bst_inorder(bst_node_t *tree, bst_items_t *items)
 {
+  if (tree == NULL)
+    return;
+  bst_inorder(tree->left, items);
+  bst_add_node_to_items(tree, items);
+  bst_inorder(tree->right, items);
 }
 
 /*
@@ -251,4 +262,9 @@ void bst_inorder(bst_node_t *tree, bst_items_t *items)
  */
 void bst_postorder(bst_node_t *tree, bst_items_t *items)
 {
+  if (tree == NULL)
+    return;
+  bst_postorder(tree->left, items);
+  bst_postorder(tree->right, items);
+  bst_add_node_to_items(tree, items);
 }
