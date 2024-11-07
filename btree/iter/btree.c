@@ -21,6 +21,7 @@
  */
 void bst_init(bst_node_t **tree)
 {
+  return;
 }
 
 /*
@@ -50,6 +51,7 @@ bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
  */
 void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
 {
+  return;
 }
 
 /*

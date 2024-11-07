@@ -19,6 +19,7 @@
  */
 void bst_init(bst_node_t **tree)
 {
+  (*tree) = NULL;
 }
 
 /*
@@ -32,7 +33,30 @@ void bst_init(bst_node_t **tree)
  */
 bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
 {
-  return false;
+  if (tree == NULL)
+    return false; // Nenasli sme
+  else
+  {
+    if (tree->key == key)
+    {
+      if (*value == NULL)
+      {
+        *value = (bst_node_content_t *)malloc(sizeof(bst_node_content_t));
+        if (*value == NULL)
+          return false;
+      }
+      (*value)->type = tree->content.type;
+      (*value)->value = tree->content.value;
+      return true; // Nasli sme
+    }
+    else
+    {
+      if (key < tree->key)
+        return bst_search(tree->left, key, value);
+      else
+        return bst_search(tree->right, key, value);
+    }
+  }
 }
 
 /*
@@ -48,6 +72,36 @@ bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
  */
 void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
 {
+  if ((*tree) == NULL)
+  {
+    (*tree) = (bst_node_t *)malloc(sizeof(bst_node_t));
+    if (*tree != NULL)
+    {
+      (*tree)->key = key;
+      (*tree)->content.type = value.type;
+      (*tree)->content.value = value.value;
+      (*tree)->left = NULL;
+      (*tree)->right = NULL;
+    }
+    return;
+  }
+  else
+  {
+    if (key < (*tree)->key)
+    {
+      bst_insert(&(*tree)->left, key, value);
+    }
+    else
+    {
+      if (key > (*tree)->key)
+        bst_insert(&(*tree)->right, key, value);
+      else
+      {
+        (*tree)->content.type = value.type;
+        (*tree)->content.value = value.value;
+      }
+    }
+  }
 }
 
 /*
@@ -82,6 +136,66 @@ void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
  */
 void bst_delete(bst_node_t **tree, char key)
 {
+  if (*tree != NULL)
+  {
+    // Ruseny kluc je v pravom podstrome
+    if (key < (*tree)->key)
+    {
+      bst_node_t **auxVar = &(*tree)->left;
+      bst_delete(auxVar, key);
+      (*tree)->left = *auxVar;
+    }
+    else
+    {
+      // Ruseny kluc je v lavom podstrome
+      if (key > (*tree)->key)
+      {
+        bst_node_t **auxVar = &(*tree)->right;
+        bst_delete(auxVar, key);
+        (*tree)->right = *auxVar;
+      }
+      // Najdeny uzol s danym klucom
+      else
+      {
+        // Ruseny nema ziadneho syna
+        if (((*tree)->left == NULL) && ((*tree)->right == NULL))
+        {
+          free((*tree));
+          *tree = NULL;
+        }
+        // Ruseny ma dvoch synov
+        else if (((*tree)->left != NULL) && ((*tree)->right != NULL))
+        {
+          bst_node_t *auxVar = (*tree)->right;
+          bst_node_t *auxVar2 = auxVar;
+          while (auxVar->left != NULL)
+            auxVar = auxVar->left;
+          while (auxVar2->left != auxVar)
+            auxVar2 = auxVar2->left;
+
+          (*tree)->key = auxVar->key;
+          (*tree)->content.type = auxVar->content.type;
+          (*tree)->content.value = auxVar->content.value;
+          auxVar2->left = NULL;
+          free(auxVar->left);
+        }
+        // Ruseny ma prave praveho syna
+        else if ((*tree)->left == NULL)
+        {
+          bst_node_t *tmp = *tree;
+          *tree = (*tree)->right;
+          free(tmp);
+        }
+        // Ruseny ma prave laveho syna
+        else
+        {
+          bst_node_t *tmp = *tree;
+          *tree = (*tree)->left;
+          free(tmp);
+        }
+      }
+    }
+  }
 }
 
 /*
@@ -95,6 +209,15 @@ void bst_delete(bst_node_t **tree, char key)
  */
 void bst_dispose(bst_node_t **tree)
 {
+  if (*tree != NULL) {
+        // Recursively dispose of the left and right subtrees
+        bst_dispose(&(*tree)->left);
+        bst_dispose(&(*tree)->right);
+        
+        // Free the current node and set it to NULL
+        free(*tree);
+        *tree = NULL;
+    }
 }
 
 /*
