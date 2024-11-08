@@ -72,6 +72,8 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
       auxVar = &(*auxVar)->right;
     else
     {
+      if ((*auxVar)->content.value != NULL)
+        free((*auxVar)->content.value);
       (*auxVar)->content = value;
       return;
     }
@@ -81,14 +83,13 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
   if ((*auxVar) != NULL)
   {
     (*auxVar)->key = key;
-    (*auxVar)->content.type = value.type;
-    (*auxVar)->content.value = value.value;
+    (*auxVar)->content = value;
     (*auxVar)->left = NULL;
     (*auxVar)->right = NULL;
   }
   else
   {
-    // Handle memory allocation failure if necessary
+    free((*auxVar)->content.value);
     fprintf(stderr, "Memory allocation failed for key '%c'\n", key);
   }
 }
@@ -108,26 +109,24 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
  */
 void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
 {
-  bst_node_t **parent = tree;
-  // Budeme prechadzat cez lavy podstrom
-  bst_node_t **current = &((*tree)->left);
-  // Iteracia cez strom az k prvku ktory je najviac v pravo
-  while ((*current)->right != NULL)
+  bst_node_t *parent = *tree;
+  bst_node_t *current = (*tree)->left;
+
+  while (current->right != NULL)
   {
     parent = current;
-    current = &((*current)->right);
+    current = current->right;
   }
-  // Naplnenie hodnot
-  target->key = (*current)->key;
-  target->content.type = (*current)->content.type;
-  target->content.value = (*current)->content.value;
-  // Presunutie ukazovatela rodicovskeho uzla
-  (*parent)->right = (*current)->left;
+
+  free(target->content.value);
+  target->content = current->content;
+  target->key = current->key;
+
+  parent->right = current->left;
+
   // Uvolnenie pamate
-  // free((*current)->content.value);
-  // (*current)->content.value = NULL;
-  free(*current);
-  *current = NULL;
+  free(current);
+  current = NULL;
 }
 
 /*
@@ -145,70 +144,73 @@ void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
  */
 void bst_delete(bst_node_t **tree, char key)
 {
-  bst_node_t **current = tree;
-  bst_node_t **parent = tree;
+  bst_node_t *current = *tree;
+  bst_node_t *parent = *tree;
   bool dir = false;
 
-  while (*current != NULL)
+  while (current != NULL)
   {
     // Ruseny kluc je v pravom podstrome
-    if (key < (*current)->key)
+    if (key < current->key)
     {
       dir = false;
       parent = current;
-      current = &((*current)->left);
+      current = current->left;
     }
     // Ruseny kluc je v lavom podstrome
-    else if (key > (*current)->key)
+    else if (key > current->key)
     {
       dir = true;
       parent = current;
-      current = &((*current)->right);
+      current = current->right;
     }
-    // Najdeny uzol s danym klucom
-    // Ruseny nema ziadneho syna
-    else if (((*current)->left == NULL) && ((*current)->right == NULL))
-    {
-      if (dir)
-        (*parent)->right = NULL;
-      else
-        (*parent)->left = NULL;
-      // free((*current)->content.value);
-      free(*current);
-      return;
-    }
-    // Ruseny ma dvoch synov
-    else if (((*current)->left != NULL) && ((*current)->right != NULL))
-    {
-      bst_replace_by_rightmost(*current, current);
-      return;
-    }
-    // Ruseny ma prave praveho syna
-    else if ((*current)->left == NULL)
-    {
-      if (dir)
-        (*parent)->right = (*current)->right;
-      else
-        (*parent)->left = (*current)->right;
-      free((*current)->content.value);
-      (*current)->content.value = NULL;
-      free(*current);
-      *current = NULL;
-      return;
-    }
-    // Ruseny ma prave laveho syna
     else
-    {
-      if (dir)
-        (*parent)->right = (*current)->left;
-      else
-        (*parent)->left = (*current)->left;
-      free((*current)->content.value);
-      (*current)->content.value = NULL;
-      free(*current);
-      *current = NULL;
-      return;
-    }
+      break;
+  }
+  if (current == NULL)
+    return;
+  // Najdeny uzol s danym klucom
+  // Ruseny nema ziadneho syna
+  if ((current->left == NULL) && (current->right == NULL))
+  {
+    if (dir)
+      parent->right = NULL;
+    else
+      parent->left = NULL;
+    free(current->content.value);
+    current->content.value = NULL;
+    free(current);
+    current = NULL;
+  }
+  // Ruseny ma dvoch synov
+  else if ((current->left != NULL) && (current->right != NULL))
+  {
+    bst_replace_by_rightmost(current, &current);
+  }
+  // Ruseny ma prave praveho syna
+  else if (current->left == NULL)
+  {
+    if (dir)
+      parent->right = current->right;
+    else
+      parent->left = current->right;
+
+    free(current->content.value);
+    current->content.value = NULL;
+    free(current);
+    current = NULL;
+  }
+  // Ruseny ma prave laveho syna
+  else
+  {
+    if (dir)
+      parent->right = current->left;
+    else
+      parent->left = current->left;
+    free(current->content.value);
+    current->content.value = NULL;
+    free(current);
+    current = NULL;
   }
 }
 
@@ -250,7 +252,10 @@ void bst_dispose(bst_node_t **tree)
     }
 
     // Free the current node
+    free(node->content.value);
+    node->content.value = NULL;
     free(node);
+    node = NULL;
   }
 
   // Set the original tree root to NULL

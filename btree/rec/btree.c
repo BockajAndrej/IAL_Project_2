@@ -90,6 +90,8 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
         bst_insert(&(*tree)->right, key, value);
       else
       {
+        if ((*tree)->content.value != NULL)
+          free((*tree)->content.value);
         (*tree)->content.type = value.type;
         (*tree)->content.value = value.value;
       }
@@ -112,6 +114,30 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
  */
 void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
 {
+  // Base case: If there is no right subtree, current is the rightmost node
+  if ((*tree)->right == NULL)
+  {
+    // Free target's current content
+    free(target->content.value);
+
+    // Copy content from current (rightmost) node to target
+    target->content = (*tree)->content;
+    target->key = (*tree)->key;
+
+    // Replace current node (rightmost node) with its left child
+    bst_node_t *temp = *tree;
+    *tree = (*tree)->left;
+
+    // Free the rightmost node
+    free(temp);
+    return;
+  }
+
+  // Recurse on the right subtree to find the rightmost node
+  if (target == *tree)
+    bst_replace_by_rightmost(target, &(*tree)->left);
+  else
+    bst_replace_by_rightmost(target, &(*tree)->right);
 }
 
 /*
@@ -129,64 +155,55 @@ void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
  */
 void bst_delete(bst_node_t **tree, char key)
 {
-  if (*tree != NULL)
+  bst_node_t *current = *tree;
+  if (current != NULL)
   {
     // Ruseny kluc je v pravom podstrome
-    if (key < (*tree)->key)
+    if (key < current->key)
     {
-      bst_node_t **auxVar = &(*tree)->left;
-      bst_delete(auxVar, key);
-      (*tree)->left = *auxVar;
+      bst_node_t *auxVar = current->left;
+      bst_delete(&auxVar, key);
+      current->left = auxVar;
     }
+    // Ruseny kluc je v lavom podstrome
+    else if (key > current->key)
+    {
+      bst_node_t *auxVar = current->right;
+      bst_delete(&auxVar, key);
+      current->right = auxVar;
+    }
+    // Najdeny uzol s danym klucom
+    // Ruseny nema ziadneho syna
+    else if ((current->left == NULL) && (current->right == NULL))
+    {
+      *tree = current->right;
+      free(current->content.value);
+      current->content.value = NULL;
+      free(current);
+      current = NULL;
+    }
+    // Ruseny ma dvoch synov
+    else if ((current->left != NULL) && (current->right != NULL))
+    {
+      bst_replace_by_rightmost(current, tree);
+    }
+    // Ruseny ma prave praveho syna
+    else if (current->left == NULL)
+    {
+      *tree = current->right;
+      free(current->content.value);
+      current->content.value = NULL;
+      free(current);
+      current = NULL;
+    }
+    // Ruseny ma prave laveho syna
     else
     {
-      // Ruseny kluc je v lavom podstrome
-      if (key > (*tree)->key)
-      {
-        bst_node_t **auxVar = &(*tree)->right;
-        bst_delete(auxVar, key);
-        (*tree)->right = *auxVar;
-      }
-      // Najdeny uzol s danym klucom
-      else
-      {
-        // Ruseny nema ziadneho syna
-        if (((*tree)->left == NULL) && ((*tree)->right == NULL))
-        {
-          free((*tree));
-          *tree = NULL;
-        }
-        // Ruseny ma dvoch synov
-        else if (((*tree)->left != NULL) && ((*tree)->right != NULL))
-        {
-          bst_node_t *auxVar = (*tree)->right;
-          bst_node_t *auxVar2 = auxVar;
-          while (auxVar->left != NULL)
-            auxVar = auxVar->left;
-          while (auxVar2->left != auxVar)
-            auxVar2 = auxVar2->left;
-
-          (*tree)->key = auxVar->key;
-          (*tree)->content.type = auxVar->content.type;
-          (*tree)->content.value = auxVar->content.value;
-          auxVar2->left = NULL;
-          free(auxVar->left);
-        }
-        // Ruseny ma prave praveho syna
-        else if ((*tree)->left == NULL)
-        {
-          bst_node_t *tmp = *tree;
-          *tree = (*tree)->right;
-          free(tmp);
-        }
-        // Ruseny ma prave laveho syna
-        else
-        {
-          bst_node_t *tmp = *tree;
-          *tree = (*tree)->left;
-          free(tmp);
-        }
-      }
+      *tree = current->left;
+      free(current->content.value);
+      current->content.value = NULL;
+      free(current);
+      current = NULL;
     }
   }
 }
@@ -209,6 +226,8 @@ void bst_dispose(bst_node_t **tree)
     bst_dispose(&(*tree)->right);
 
     // Free the current node and set it to NULL
+    free((*tree)->content.value);
+    (*tree)->content.value = NULL;
     free(*tree);
     *tree = NULL;
   }
