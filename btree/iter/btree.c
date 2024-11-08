@@ -35,7 +35,19 @@ void bst_init(bst_node_t **tree)
  */
 bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
 {
-  
+  while (tree != NULL)
+  {
+    if (tree->key < key)
+      tree = tree->left;
+    else if (tree->key > key)
+      tree = tree->right;
+    else
+    {
+      *value = &tree->content;
+      return true;
+    }
+  }
+  return false;
 }
 
 /*
@@ -51,20 +63,33 @@ bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
  */
 void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
 {
-    while(*tree == NULL){
-      if((*tree)->key < key)
-        *tree = (*tree)->left;
-      else if ((*tree)->key > key)
-        *tree = (*tree)->right;
-      else
-      {
-        (*tree)->content.type = value.type;
-        (*tree)->content.value = value.value;
-        return;
-      }
+  bst_node_t **auxVar = tree;
+  while ((*auxVar) != NULL)
+  {
+    if ((*auxVar)->key < key)
+      auxVar = &((*auxVar)->left);
+    else if ((*auxVar)->key > key)
+      auxVar = &(*auxVar)->right;
+    else
+    {
+      (*auxVar)->content = value;
+      return;
     }
-  
+  }
 
+  (*auxVar) = (bst_node_t *)malloc(sizeof(bst_node_t));
+  if ((*auxVar) != NULL)
+  {
+    (*auxVar)->key = key;
+    (*auxVar)->content.type = value.type;
+    (*auxVar)->content.value = value.value;
+    (*auxVar)->left = NULL;
+    (*auxVar)->right = NULL;
+  }
+  else {
+        // Handle memory allocation failure if necessary
+        fprintf(stderr, "Memory allocation failed for key '%c'\n", key);
+    } 
 }
 
 /*

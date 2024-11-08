@@ -39,14 +39,7 @@ bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
   {
     if (tree->key == key)
     {
-      if (*value == NULL)
-      {
-        *value = (bst_node_content_t *)malloc(sizeof(bst_node_content_t));
-        if (*value == NULL)
-          return false;
-      }
-      (*value)->type = tree->content.type;
-      (*value)->value = tree->content.value;
+      (*value) = &tree->content;
       return true; // Nasli sme
     }
     else
