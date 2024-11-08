@@ -37,9 +37,9 @@ bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
 {
   while (tree != NULL)
   {
-    if (tree->key < key)
+    if (tree->key > key)
       tree = tree->left;
-    else if (tree->key > key)
+    else if (tree->key < key)
       tree = tree->right;
     else
     {
@@ -66,9 +66,9 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
   bst_node_t **auxVar = tree;
   while ((*auxVar) != NULL)
   {
-    if ((*auxVar)->key < key)
+    if ((*auxVar)->key > key)
       auxVar = &((*auxVar)->left);
-    else if ((*auxVar)->key > key)
+    else if ((*auxVar)->key < key)
       auxVar = &(*auxVar)->right;
     else
     {
@@ -86,10 +86,11 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
     (*auxVar)->left = NULL;
     (*auxVar)->right = NULL;
   }
-  else {
-        // Handle memory allocation failure if necessary
-        fprintf(stderr, "Memory allocation failed for key '%c'\n", key);
-    } 
+  else
+  {
+    // Handle memory allocation failure if necessary
+    fprintf(stderr, "Memory allocation failed for key '%c'\n", key);
+  }
 }
 
 /*
@@ -107,6 +108,26 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
  */
 void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
 {
+  bst_node_t **parent = tree;
+  // Budeme prechadzat cez lavy podstrom
+  bst_node_t **current = &((*tree)->left);
+  // Iteracia cez strom az k prvku ktory je najviac v pravo
+  while ((*current)->right != NULL)
+  {
+    parent = current;
+    current = &((*current)->right);
+  }
+  // Naplnenie hodnot
+  target->key = (*current)->key;
+  target->content.type = (*current)->content.type;
+  target->content.value = (*current)->content.value;
+  // Presunutie ukazovatela rodicovskeho uzla
+  (*parent)->right = (*current)->left;
+  // Uvolnenie pamate
+  // free((*current)->content.value);
+  // (*current)->content.value = NULL;
+  free(*current);
+  *current = NULL;
 }
 
 /*
@@ -124,6 +145,71 @@ void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
  */
 void bst_delete(bst_node_t **tree, char key)
 {
+  bst_node_t **current = tree;
+  bst_node_t **parent = tree;
+  bool dir = false;
+
+  while (*current != NULL)
+  {
+    // Ruseny kluc je v pravom podstrome
+    if (key < (*current)->key)
+    {
+      dir = false;
+      parent = current;
+      current = &((*current)->left);
+    }
+    // Ruseny kluc je v lavom podstrome
+    else if (key > (*current)->key)
+    {
+      dir = true;
+      parent = current;
+      current = &((*current)->right);
+    }
+    // Najdeny uzol s danym klucom
+    // Ruseny nema ziadneho syna
+    else if (((*current)->left == NULL) && ((*current)->right == NULL))
+    {
+      if (dir)
+        (*parent)->right = NULL;
+      else
+        (*parent)->left = NULL;
+      // free((*current)->content.value);
+      free(*current);
+      return;
+    }
+    // Ruseny ma dvoch synov
+    else if (((*current)->left != NULL) && ((*current)->right != NULL))
+    {
+      bst_replace_by_rightmost(*current, current);
+      return;
+    }
+    // Ruseny ma prave praveho syna
+    else if ((*current)->left == NULL)
+    {
+      if (dir)
+        (*parent)->right = (*current)->right;
+      else
+        (*parent)->left = (*current)->right;
+      free((*current)->content.value);
+      (*current)->content.value = NULL;
+      free(*current);
+      *current = NULL;
+      return;
+    }
+    // Ruseny ma prave laveho syna
+    else
+    {
+      if (dir)
+        (*parent)->right = (*current)->left;
+      else
+        (*parent)->left = (*current)->left;
+      free((*current)->content.value);
+      (*current)->content.value = NULL;
+      free(*current);
+      *current = NULL;
+      return;
+    }
+  }
 }
 
 /*
@@ -138,6 +224,37 @@ void bst_delete(bst_node_t **tree, char key)
  */
 void bst_dispose(bst_node_t **tree)
 {
+  if (*tree == NULL)
+    return; // Nothing to delete
+
+  // Initialize the stack for node pointers
+  stack_bst_t stack;
+  stack_bst_init(&stack);
+
+  // Push the root node onto the stack
+  stack_bst_push(&stack, *tree);
+
+  while (!stack_bst_empty(&stack))
+  {
+    // Pop a node from the stack
+    bst_node_t *node = stack_bst_pop(&stack);
+
+    // Push the right and left children onto the stack, if they exist
+    if (node->right)
+    {
+      stack_bst_push(&stack, node->right);
+    }
+    if (node->left)
+    {
+      stack_bst_push(&stack, node->left);
+    }
+
+    // Free the current node
+    free(node);
+  }
+
+  // Set the original tree root to NULL
+  *tree = NULL;
 }
 
 /*
@@ -151,6 +268,12 @@ void bst_dispose(bst_node_t **tree)
  */
 void bst_leftmost_preorder(bst_node_t *tree, stack_bst_t *to_visit, bst_items_t *items)
 {
+  while (tree != NULL)
+  {
+    stack_bst_push(to_visit, tree);
+    bst_add_node_to_items(tree, items);
+    tree = tree->left;
+  }
 }
 
 /*
@@ -163,6 +286,15 @@ void bst_leftmost_preorder(bst_node_t *tree, stack_bst_t *to_visit, bst_items_t 
  */
 void bst_preorder(bst_node_t *tree, bst_items_t *items)
 {
+  stack_bst_t stack;
+  stack_bst_init(&stack);
+  bst_leftmost_preorder(tree, &stack, items);
+
+  while (!stack_bst_empty(&stack))
+  {
+    tree = stack_bst_pop(&stack);
+    bst_leftmost_preorder(tree->right, &stack, items);
+  }
 }
 
 /*
@@ -176,6 +308,11 @@ void bst_preorder(bst_node_t *tree, bst_items_t *items)
  */
 void bst_leftmost_inorder(bst_node_t *tree, stack_bst_t *to_visit)
 {
+  while (tree != NULL)
+  {
+    stack_bst_push(to_visit, tree);
+    tree = tree->left;
+  }
 }
 
 /*
@@ -188,6 +325,16 @@ void bst_leftmost_inorder(bst_node_t *tree, stack_bst_t *to_visit)
  */
 void bst_inorder(bst_node_t *tree, bst_items_t *items)
 {
+  stack_bst_t stack;
+  stack_bst_init(&stack);
+  bst_leftmost_inorder(tree, &stack);
+
+  while (!stack_bst_empty(&stack))
+  {
+    tree = stack_bst_pop(&stack);
+    bst_add_node_to_items(tree, items);
+    bst_leftmost_inorder(tree->right, &stack);
+  }
 }
 
 /*
@@ -203,6 +350,12 @@ void bst_inorder(bst_node_t *tree, bst_items_t *items)
 void bst_leftmost_postorder(bst_node_t *tree, stack_bst_t *to_visit,
                             stack_bool_t *first_visit)
 {
+  while (tree != NULL)
+  {
+    stack_bst_push(to_visit, tree);
+    stack_bool_push(first_visit, true);
+    tree = tree->left;
+  }
 }
 
 /*
@@ -215,4 +368,27 @@ void bst_leftmost_postorder(bst_node_t *tree, stack_bst_t *to_visit,
  */
 void bst_postorder(bst_node_t *tree, bst_items_t *items)
 {
+  bool fromLeft;
+  stack_bst_t s;
+  stack_bst_init(&s);
+  stack_bool_t sb;
+  stack_bool_init(&sb);
+  bst_leftmost_postorder(tree, &s, &sb);
+
+  while (!stack_bst_empty(&s))
+  {
+    tree = stack_bst_top(&s);
+    fromLeft = stack_bool_pop(&sb);
+
+    if (fromLeft)
+    {
+      stack_bool_push(&sb, false);
+      bst_leftmost_postorder(tree->right, &s, &sb);
+    }
+    else
+    {
+      stack_bst_pop(&s);
+      bst_add_node_to_items(tree, items);
+    }
+  }
 }
