@@ -19,6 +19,7 @@
  */
 void bst_init(bst_node_t **tree)
 {
+  // Nastaví kořen stromu na NULL, čímž inicializuje prázdný strom
   (*tree) = NULL;
 }
 
@@ -34,20 +35,30 @@ void bst_init(bst_node_t **tree)
 bool bst_search(bst_node_t *tree, char key, bst_node_content_t **value)
 {
   if (tree == NULL)
-    return false; // Nenasli sme
+  {
+    // Strom je prázdny nebo jsme dosáhli listu bez hledaného klíče
+    return false; // Nenalezeno
+  }
   else
   {
     if (tree->key == key)
     {
+      // Nalezli jsme uzel s požadovaným klíčem
       (*value) = &tree->content;
-      return true; // Nasli sme
+      return true; // Nalezeno
     }
     else
     {
       if (key < tree->key)
+      {
+        // Hledaný klíč je menší než aktuální, pokračujeme vlevo
         return bst_search(tree->left, key, value);
+      }
       else
+      {
+        // Hledaný klíč je větší než aktuální, pokračujeme vpravo
         return bst_search(tree->right, key, value);
+      }
     }
   }
 }
@@ -67,9 +78,11 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
 {
   if ((*tree) == NULL)
   {
+    // Pokud strom je prázdný, vytvoříme nový uzel
     (*tree) = (bst_node_t *)malloc(sizeof(bst_node_t));
     if (*tree != NULL)
     {
+      // Inicializujeme nový uzel s daným klíčem a hodnotou
       (*tree)->key = key;
       (*tree)->content.type = value.type;
       (*tree)->content.value = value.value;
@@ -82,16 +95,25 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
   {
     if (key < (*tree)->key)
     {
+      // Klíč je menší než aktuální, pokračujeme vlevo
       bst_insert(&(*tree)->left, key, value);
     }
     else
     {
       if (key > (*tree)->key)
+      {
+        // Klíč je větší než aktuální, pokračujeme vpravo
         bst_insert(&(*tree)->right, key, value);
+      }
       else
       {
+        // Klíč již existuje, nahrazujeme jeho hodnotu
         if ((*tree)->content.value != NULL)
+        {
+          // Uvolníme předchozí hodnotu, pokud existuje
           free((*tree)->content.value);
+        }
+        // Aktualizujeme typ a hodnotu
         (*tree)->content.type = value.type;
         (*tree)->content.value = value.value;
       }
@@ -114,30 +136,29 @@ void bst_insert(bst_node_t **tree, char key, bst_node_content_t value)
  */
 void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
 {
-  // Base case: If there is no right subtree, current is the rightmost node
+  // Base case: Pokud není pravý potomek, aktuální uzel je nejpravější
   if ((*tree)->right == NULL)
   {
-    // Free target's current content
+    // Uvolníme obsah cílového uzlu
     free(target->content.value);
 
-    // Copy content from current (rightmost) node to target
+    // Přeneseme obsah aktuálního (nejpravějšího) uzlu do cílového
     target->content = (*tree)->content;
     target->key = (*tree)->key;
 
-    // Replace current node (rightmost node) with its left child
+    // Dočasně uchováme ukazatel na aktuální uzel
     bst_node_t *temp = *tree;
+
+    // Nahrazujeme aktuální uzel jeho levým potomkem
     *tree = (*tree)->left;
 
-    // Free the rightmost node
+    // Uvolníme původní nejpravější uzel
     free(temp);
     return;
   }
 
-  // Recurse on the right subtree to find the rightmost node
-  if (target == *tree)
-    bst_replace_by_rightmost(target, &(*tree)->left);
-  else
-    bst_replace_by_rightmost(target, &(*tree)->right);
+  // Rekurzivně pokračujeme na pravém podstromu, abychom našli nejpravější uzel
+  bst_replace_by_rightmost(target, &(*tree)->right);
 }
 
 /*
@@ -155,55 +176,44 @@ void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree)
  */
 void bst_delete(bst_node_t **tree, char key)
 {
-  bst_node_t *current = *tree;
-  if (current != NULL)
+  // Pokud strom není prázdný, pokračujeme hledáním uzlu k odstranění
+  if (*tree != NULL)
   {
-    // Ruseny kluc je v pravom podstrome
+    bst_node_t *current = *tree;
+
     if (key < current->key)
     {
-      bst_node_t *auxVar = current->left;
-      bst_delete(&auxVar, key);
-      current->left = auxVar;
+      // Klíč k odstranění je menší, hledáme v levém podstromu
+      bst_delete(&current->left, key);
     }
-    // Ruseny kluc je v lavom podstrome
     else if (key > current->key)
     {
-      bst_node_t *auxVar = current->right;
-      bst_delete(&auxVar, key);
-      current->right = auxVar;
+      // Klíč k odstranění je větší, hledáme v pravém podstromu
+      bst_delete(&current->right, key);
     }
-    // Najdeny uzol s danym klucom
-    // Ruseny nema ziadneho syna
-    else if ((current->left == NULL) && (current->right == NULL))
-    {
-      *tree = current->right;
-      free(current->content.value);
-      current->content.value = NULL;
-      free(current);
-      current = NULL;
-    }
-    // Ruseny ma dvoch synov
-    else if ((current->left != NULL) && (current->right != NULL))
-    {
-      bst_replace_by_rightmost(current, tree);
-    }
-    // Ruseny ma prave praveho syna
-    else if (current->left == NULL)
-    {
-      *tree = current->right;
-      free(current->content.value);
-      current->content.value = NULL;
-      free(current);
-      current = NULL;
-    }
-    // Ruseny ma prave laveho syna
     else
     {
-      *tree = current->left;
-      free(current->content.value);
-      current->content.value = NULL;
-      free(current);
-      current = NULL;
+      // Nalezli jsme uzel s požadovaným klíčem
+      if (current->left == NULL && current->right == NULL)
+      {
+        // Uzel nemá žádné potomky, můžeme jej jednoduše odstranit
+        free(current->content.value); // Uvolníme obsah
+        free(current);                // Uvolníme samotný uzel
+        *tree = NULL;                 // Nastavíme ukazatel na NULL
+      }
+      else if (current->left != NULL && current->right != NULL)
+      {
+        // Uzel má oba podstromy, najdeme jeho nástupce
+        bst_replace_by_rightmost(current, &current->left);
+      }
+      else
+      {
+        // Uzel má pouze jeden podstrom
+        bst_node_t *child = (current->left != NULL) ? current->left : current->right;
+        free(current->content.value); // Uvolníme obsah
+        free(current);                // Uvolníme samotný uzel
+        *tree = child;                // Předáme ukazatel na podstrom
+      }
     }
   }
 }
@@ -221,15 +231,19 @@ void bst_dispose(bst_node_t **tree)
 {
   if (*tree != NULL)
   {
-    // Recursively dispose of the left and right subtrees
+    // Rekurzivně zrušíme levý podstrom
     bst_dispose(&(*tree)->left);
+
+    // Rekurzivně zrušíme pravý podstrom
     bst_dispose(&(*tree)->right);
 
-    // Free the current node and set it to NULL
+    // Uvolníme obsah aktuálního uzlu
     free((*tree)->content.value);
     (*tree)->content.value = NULL;
+
+    // Uvolníme samotný uzel
     free(*tree);
-    *tree = NULL;
+    *tree = NULL; // Nastavíme ukazateľ na NULL
   }
 }
 
@@ -243,9 +257,15 @@ void bst_dispose(bst_node_t **tree)
 void bst_preorder(bst_node_t *tree, bst_items_t *items)
 {
   if (tree == NULL)
-    return;
+    return; // Základní případ: prázdný strom
+
+  // Zpracujeme aktuální uzel před jeho podstromy
   bst_add_node_to_items(tree, items);
+
+  // Rekurzivně procházíme levý podstrom
   bst_preorder(tree->left, items);
+
+  // Rekurzivně procházíme pravý podstrom
   bst_preorder(tree->right, items);
 }
 
@@ -259,9 +279,15 @@ void bst_preorder(bst_node_t *tree, bst_items_t *items)
 void bst_inorder(bst_node_t *tree, bst_items_t *items)
 {
   if (tree == NULL)
-    return;
+    return; // Základní případ: prázdný strom
+
+  // Rekurzivně procházíme levý podstrom
   bst_inorder(tree->left, items);
+
+  // Zpracujeme aktuální uzel mezi podstromy
   bst_add_node_to_items(tree, items);
+
+  // Rekurzivně procházíme pravý podstrom
   bst_inorder(tree->right, items);
 }
 
@@ -275,8 +301,14 @@ void bst_inorder(bst_node_t *tree, bst_items_t *items)
 void bst_postorder(bst_node_t *tree, bst_items_t *items)
 {
   if (tree == NULL)
-    return;
+    return; // Základní případ: prázdný strom
+
+  // Rekurzivně procházíme levý podstrom
   bst_postorder(tree->left, items);
+
+  // Rekurzivně procházíme pravý podstrom
   bst_postorder(tree->right, items);
+
+  // Zpracujeme aktuální uzel po podstromech
   bst_add_node_to_items(tree, items);
 }

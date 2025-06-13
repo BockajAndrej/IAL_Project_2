@@ -47,21 +47,19 @@ void letter_count(bst_node_t **tree, char *input)
     int pole[256] = {
         0,
     };
-
+    // Inkrementacia len indexov pola ktore obsahuju dany symbol
     for (int i = 0; '\0' != input[i]; i++)
     {
-        // printf("%c - ", input[i]);
-        // printf("%c\n", getNormalised(input[i]));
         pole[(int)getNormalised(input[i])]++;
     }
-
+    // Ak je v poli nezaporna hodnota vlozi ju do stromu
     for (int i = 0; i < 256; i++)
     {
         if (pole[i] != 0)
         {
             bst_node_content_t item = {
                 .type = INTEGER,
-                .value = malloc(sizeof(int))};
+                .value = (int *)malloc(sizeof(int))};
             *((int *)(item.value)) = pole[i];
             bst_insert(tree, i, item);
         }

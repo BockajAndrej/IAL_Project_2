@@ -194,7 +194,7 @@ void bst_delete(bst_node_t **tree, char key)
       parent->right = current->right;
     else
       parent->left = current->right;
-
+    // Uvolnenie nejprv obsahu a nasledne celeho uzlu
     free(current->content.value);
     current->content.value = NULL;
     free(current);
@@ -207,6 +207,7 @@ void bst_delete(bst_node_t **tree, char key)
       parent->right = current->left;
     else
       parent->left = current->left;
+      // Uvolnenie nejprv obsahu a nasledne celeho uzlu
     free(current->content.value);
     current->content.value = NULL;
     free(current);

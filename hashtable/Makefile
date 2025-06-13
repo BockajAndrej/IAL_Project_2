@@ -7,5 +7,8 @@ FILES=hashtable.c test.c test_util.c
 test: $(FILES)
 	$(CC) $(CFLAGS) -o $@ $(FILES)
 
+valgrind: test
+	valgrind --leak-check=full --track-origins=yes ./test
+
 clean:
 	rm -f test

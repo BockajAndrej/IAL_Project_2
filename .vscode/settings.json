@@ -7,6 +7,12 @@
         "type_traits": "c",
         "utility": "c",
         "ostream": "c",
-        "ranges": "c"
+        "ranges": "c",
+        "optional": "c",
+        "system_error": "c",
+        "string": "c",
+        "vector": "c",
+        "memory": "c",
+        "string_view": "c"
     }
 }
